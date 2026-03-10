@@ -9,8 +9,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, toggleSidebar }) => {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 md:px-6 bg-transparent">
-      <div className="flex items-center gap-4">
+    <header className="fixed top-0 left-0 right-0 z-50 h-16 pointer-events-none">
+      <div className="w-full h-full bg-zinc-950/70 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 md:px-6 pointer-events-auto shadow-lg shadow-black/20">
+        <div className="flex items-center gap-4">
         <button 
           onClick={toggleSidebar}
           className="md:hidden text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors"
@@ -49,6 +50,7 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, tog
         <button className="bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold py-2 px-4 rounded-lg transition-colors">
           Criar Conta
         </button>
+      </div>
       </div>
     </header>
   );
