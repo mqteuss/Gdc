@@ -34,6 +34,7 @@ export default function App() {
 
   const [monitoredGames, setMonitoredGames] = useState<GameDeal[]>([]);
   const [showMonitoredOnly, setShowMonitoredOnly] = useState(false);
+  const [monitoredVisibleCount, setMonitoredVisibleCount] = useState(20);
 
   // Load monitored games from IndexedDB
   useEffect(() => {
@@ -112,7 +113,10 @@ export default function App() {
 
   // Reset pagination when filters change
   useEffect(() => {
-    if (showMonitoredOnly) return;
+    if (showMonitoredOnly) {
+      setMonitoredVisibleCount(20);
+      return;
+    }
     setPageNumber(0);
     setDeals([]);
     setHasMore(true);
@@ -178,8 +182,12 @@ export default function App() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore && !showMonitoredOnly) {
-          setPageNumber(prev => prev + 1);
+        if (entries[0].isIntersecting) {
+          if (showMonitoredOnly) {
+            setMonitoredVisibleCount(prev => prev + 20);
+          } else if (hasMore && !isLoading && !isLoadingMore) {
+            setPageNumber(prev => prev + 1);
+          }
         }
       },
       { threshold: 0.1 }
@@ -202,7 +210,7 @@ export default function App() {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const displayedDeals = showMonitoredOnly 
-    ? monitoredGames 
+    ? monitoredGames.slice(0, monitoredVisibleCount) 
     : deals.map(deal => {
         const storeObj = availableStores.find(s => s.id === deal.storeID);
         
@@ -388,7 +396,7 @@ export default function App() {
                 )}
 
                 {/* Infinite Scroll Observer Target */}
-                {hasMore && displayedDeals.length > 0 && !showMonitoredOnly && (
+                {(showMonitoredOnly ? monitoredVisibleCount < monitoredGames.length : hasMore) && displayedDeals.length > 0 && (
                   <div ref={observerTarget} className="w-full py-12 flex justify-center items-center">
                     {isLoadingMore ? (
                       <div className="flex flex-col items-center gap-2">
