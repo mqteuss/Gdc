@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { GameCard } from './components/GameCard';
-import { Frown, Loader2, ArrowDownUp, Eye } from 'lucide-react';
+import { Frown, Loader2, ArrowDownUp, Eye, SearchX, Ghost } from 'lucide-react';
 import { getDeals, getStores, Deal, Store as ApiStore } from './services/cheapshark';
 import { GameDeal } from './types';
 import { get, set } from 'idb-keyval';
@@ -226,14 +226,14 @@ export default function App() {
       });
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 flex flex-col font-sans selection:bg-emerald-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-zinc-950 text-zinc-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden">
       <Header 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
         toggleSidebar={toggleSidebar}
       />
       
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex pt-16 min-h-screen">
         {/* Invisible edge drag area to open sidebar */}
         {!isSidebarOpen && (
           <motion.div 
@@ -256,56 +256,29 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
               onClick={() => setIsSidebarOpen(false)}
             />
           )}
         </AnimatePresence>
 
         {/* Sidebar */}
-        <motion.div 
-          className="fixed inset-y-0 left-0 z-40 md:relative md:z-auto pt-16 md:pt-0 w-[65vw] sm:w-[50vw] md:w-auto h-full bg-zinc-900/80 backdrop-blur-md border-r border-white/5"
-          initial={false}
-          animate={{ x: isSidebarOpen ? 0 : '-100%' }}
-          transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.1}
-          onDragEnd={(e, info) => {
-            if (info.offset.x < -50) {
-              setIsSidebarOpen(false);
-            }
-          }}
-          style={{ x: isSidebarOpen ? 0 : '-100%' }}
+        <div 
+          className={`fixed inset-y-0 left-0 z-40 pt-16 w-[75vw] sm:w-[50vw] md:w-64 h-full bg-zinc-950/95 md:bg-transparent backdrop-blur-xl md:backdrop-blur-none border-r border-white/5 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
         >
-          {/* Reset transform for desktop */}
-          <div className="hidden md:block h-full">
-            <Sidebar 
-              availableStores={availableStores}
-              selectedStores={selectedStores}
-              setSelectedStores={setSelectedStores}
-              minPrice={minPrice}
-              setMinPrice={setMinPrice}
-              maxPrice={maxPrice}
-              setMaxPrice={setMaxPrice}
-            />
-          </div>
-          {/* Mobile content */}
-          <div className="md:hidden h-full">
-            <Sidebar 
-              availableStores={availableStores}
-              selectedStores={selectedStores}
-              setSelectedStores={setSelectedStores}
-              minPrice={minPrice}
-              setMinPrice={setMinPrice}
-              maxPrice={maxPrice}
-              setMaxPrice={setMaxPrice}
-            />
-          </div>
-        </motion.div>
+          <Sidebar 
+            availableStores={availableStores}
+            selectedStores={selectedStores}
+            setSelectedStores={setSelectedStores}
+            minPrice={minPrice}
+            setMinPrice={setMinPrice}
+            maxPrice={maxPrice}
+            setMaxPrice={setMaxPrice}
+          />
+        </div>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 p-4 md:p-8 md:ml-64">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div className="flex flex-wrap items-center gap-3">
@@ -357,17 +330,20 @@ export default function App() {
             </div>
 
             {isLoading && pageNumber === 0 && !showMonitoredOnly ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-                <p className="text-zinc-400">Buscando as melhores ofertas...</p>
+              <div className="flex flex-col items-center justify-center py-32 text-center px-4">
+                <div className="bg-emerald-500/10 p-8 rounded-full mb-8 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
+                  <Loader2 className="w-14 h-14 text-emerald-500 animate-spin" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">Carregando ofertas</h3>
+                <p className="text-zinc-400 max-w-md text-lg leading-relaxed">Buscando os melhores preços em todas as lojas...</p>
               </div>
             ) : error && !showMonitoredOnly ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="bg-red-500/10 p-6 rounded-full mb-6 border border-red-500/20">
-                  <Frown size={48} className="text-red-500" />
+              <div className="flex flex-col items-center justify-center py-32 text-center px-4">
+                <div className="bg-red-500/10 p-8 rounded-full mb-8 border border-red-500/20 shadow-2xl shadow-red-500/10">
+                  <Frown size={56} className="text-red-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Ops! Algo deu errado</h3>
-                <p className="text-zinc-400 max-w-md">{error}</p>
+                <h3 className="text-2xl font-bold text-white mb-3">Ops! Algo deu errado</h3>
+                <p className="text-zinc-400 max-w-md text-lg leading-relaxed">{error}</p>
               </div>
             ) : (
               <>
@@ -383,17 +359,17 @@ export default function App() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="bg-zinc-900 p-6 rounded-full mb-6 border border-zinc-800">
-                      {showMonitoredOnly ? <Eye size={48} className="text-zinc-600" /> : <Frown size={48} className="text-zinc-600" />}
+                  <div className="flex flex-col items-center justify-center py-32 text-center px-4">
+                    <div className="bg-zinc-900/50 p-8 rounded-full mb-8 border border-white/5 shadow-2xl shadow-black/50">
+                      {showMonitoredOnly ? <Ghost size={56} className="text-zinc-500" /> : <SearchX size={56} className="text-zinc-500" />}
                     </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">
-                      {showMonitoredOnly ? 'Nenhum jogo monitorado' : 'Nenhum jogo encontrado'}
+                    <h3 className="text-2xl font-bold text-white mb-3">
+                      {showMonitoredOnly ? 'Sua lista está vazia' : 'Nenhum jogo encontrado'}
                     </h3>
-                    <p className="text-zinc-400 max-w-md">
+                    <p className="text-zinc-400 max-w-md text-lg leading-relaxed">
                       {showMonitoredOnly 
-                        ? 'Você ainda não está monitorando nenhum jogo. Clique no ícone de olho em qualquer oferta para adicioná-la aqui.' 
-                        : 'Não encontramos nenhuma oferta que corresponda aos seus filtros atuais. Tente remover alguns filtros ou buscar por outro termo.'}
+                        ? 'Você ainda não está monitorando nenhum jogo. Explore as ofertas e clique no ícone de olho para adicioná-las aqui.' 
+                        : 'Não encontramos nenhuma oferta que corresponda aos seus filtros atuais. Que tal tentar uma busca diferente?'}
                     </p>
                     {!showMonitoredOnly && (
                       <button 
@@ -403,7 +379,7 @@ export default function App() {
                           setMinPrice('');
                           setMaxPrice('');
                         }}
-                        className="mt-6 text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                        className="mt-8 bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-emerald-500/20"
                       >
                         Limpar todos os filtros
                       </button>

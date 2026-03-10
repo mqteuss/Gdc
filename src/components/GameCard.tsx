@@ -6,9 +6,95 @@ interface GameCardProps {
   deal: GameDeal;
   isMonitored?: boolean;
   onToggleMonitor?: (deal: GameDeal) => void;
+  layout?: 'horizontal' | 'vertical';
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ deal, isMonitored = false, onToggleMonitor }) => {
+export const GameCard: React.FC<GameCardProps> = ({ deal, isMonitored = false, onToggleMonitor, layout = 'horizontal' }) => {
+  if (layout === 'vertical') {
+    return (
+      <div className="bg-zinc-900/40 border border-white/5 rounded-md overflow-hidden flex flex-col">
+        {/* Image */}
+        <div className="w-full aspect-[460/215] relative bg-black/20">
+          <img 
+            src={deal.imageUrl.replace(/capsule_231x87/g, 'header')} 
+            alt={deal.title} 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+            loading="lazy"
+          />
+          <div className="absolute top-2 right-2 bg-[#4c6b22] text-[#a3d955] text-xs font-bold px-1.5 py-1 rounded-sm">
+            -{deal.discountPercentage}%
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="p-3 flex flex-col flex-1">
+          <h3 className="text-base font-medium text-zinc-200 mb-2">{deal.title}</h3>
+          
+          {/* Tags */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            <span className="text-[10px] text-zinc-400 bg-white/5 px-1.5 py-0.5 rounded-sm border border-white/5">
+              {deal.store}
+            </span>
+            <span className="text-[10px] text-zinc-400 bg-white/5 px-1.5 py-0.5 rounded-sm border border-white/5">
+              {deal.platform}
+            </span>
+          </div>
+          
+          {/* Ratings */}
+          <div className="flex items-center gap-3 mb-4 mt-auto">
+            {deal.metacriticScore && deal.metacriticScore !== '0' && (
+              <span className="text-xs text-yellow-500/90 flex items-center gap-1">
+                <Star size={12} className="fill-yellow-500/90" />
+                {deal.metacriticScore}
+              </span>
+            )}
+            {deal.steamRatingPercent && deal.steamRatingPercent !== '0' && (
+              <span className="text-xs text-blue-400/90 flex items-center gap-1">
+                <ThumbsUp size={12} />
+                {deal.steamRatingPercent}%
+              </span>
+            )}
+          </div>
+          
+          {/* Bottom Row */}
+          <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
+            {onToggleMonitor && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onToggleMonitor(deal);
+                }}
+                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors px-2 py-1 bg-white/5 rounded-sm"
+              >
+                Remover
+              </button>
+            )}
+            
+            <div className="flex items-center gap-2 bg-zinc-950/50 rounded-sm overflow-hidden">
+              <div className="px-2 py-1 flex flex-col items-end justify-center">
+                <span className="text-[10px] text-zinc-500 line-through leading-none mb-0.5">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(deal.originalPrice)}
+                </span>
+                <span className="text-sm font-medium text-[#a3d955] leading-none">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(deal.discountedPrice)}
+                </span>
+              </div>
+              <a 
+                href={deal.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#4c6b22] hover:bg-[#5c8029] text-[#a3d955] hover:text-white text-sm font-medium px-3 py-2 transition-colors h-full flex items-center"
+              >
+                Ver Oferta
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <a 
       href={deal.url}
