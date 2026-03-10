@@ -32,22 +32,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-full md:w-64 bg-transparent p-6 flex flex-col gap-8 h-full overflow-y-auto">
       <div>
         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-4">Preço (R$)</h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 bg-zinc-800/80 p-1.5 rounded-xl shadow-inner shadow-black/40">
           <input
             type="number"
             placeholder="Mín"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+            className="w-full bg-transparent border-none rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-400 focus:outline-none focus:bg-zinc-700/80 transition-colors text-center"
             min="0"
           />
-          <span className="text-zinc-500">-</span>
+          <span className="text-zinc-400 font-medium">-</span>
           <input
             type="number"
             placeholder="Máx"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+            className="w-full bg-transparent border-none rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-400 focus:outline-none focus:bg-zinc-700/80 transition-colors text-center"
             min="0"
           />
         </div>

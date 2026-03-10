@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, tog
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-zinc-700 rounded-lg leading-5 bg-zinc-900 text-zinc-300 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-zinc-800 sm:text-sm transition-all"
+            className="block w-full pl-10 pr-3 py-2.5 border-none rounded-xl leading-5 bg-zinc-800/80 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:bg-zinc-700/90 sm:text-sm transition-all shadow-inner shadow-black/40"
             placeholder="Buscar jogos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
