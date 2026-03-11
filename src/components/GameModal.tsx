@@ -95,7 +95,7 @@ export const GameModal: React.FC<GameModalProps> = ({ game, onClose, exchangeRat
           {/* Header Image */}
           <div className="relative h-48 sm:h-64 w-full bg-black/50 flex-shrink-0">
             <img 
-              src={game.imageUrl.replace(/capsule_231x87/g, 'header')} 
+              src={game.imageUrl.includes('store_item_assets') ? game.imageUrl : game.imageUrl.replace(/capsule_231x87/g, 'header')} 
               alt={game.title} 
               className="w-full h-full object-cover opacity-60"
               referrerPolicy="no-referrer"
