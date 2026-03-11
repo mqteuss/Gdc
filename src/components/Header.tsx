@@ -1,6 +1,5 @@
 import React from 'react';
 import { Search, Gamepad2, Menu } from 'lucide-react';
-import { motion } from 'motion/react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -67,9 +66,9 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Minimalist Tabs Bar */}
+        {/* Minimalist Tabs Bar — CSS puro, sem Framer Motion */}
         <div className="flex items-center justify-center w-full px-4 border-t border-white/5">
-          <div className="flex items-center gap-8 -mb-px">
+          <div className="relative flex items-center gap-8">
             <button
               onClick={() => setShowMonitoredOnly(false)}
               className={`relative py-3 px-2 text-sm font-medium transition-colors ${
@@ -77,13 +76,6 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               Ofertas
-              {!showMonitoredOnly && (
-                <motion.div
-                  layoutId="activeTabUnderline"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
             </button>
 
             <button
@@ -98,14 +90,16 @@ export const Header: React.FC<HeaderProps> = ({
                   ({monitoredCount})
                 </span>
               )}
-              {showMonitoredOnly && (
-                <motion.div
-                  layoutId="activeTabUnderline"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
             </button>
+
+            {/* Indicador ativo — barra fixa que desliza via CSS transform */}
+            <div
+              className="absolute bottom-0 h-0.5 bg-white rounded-t-full transition-all duration-300 ease-out"
+              style={{
+                left: showMonitoredOnly ? 'calc(50% + 16px)' : '0px',
+                width: showMonitoredOnly ? 'calc(50% - 16px)' : 'calc(50% - 16px)',
+              }}
+            />
           </div>
         </div>
       </div>
