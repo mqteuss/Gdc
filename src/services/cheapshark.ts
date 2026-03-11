@@ -95,3 +95,22 @@ export async function getGameDetails(gameID: string): Promise<GameDetails> {
   }
   return response.json();
 }
+
+export interface GameSuggestion {
+  gameID: string;
+  steamAppID: string | null;
+  cheapest: string;
+  cheapestDealID: string;
+  external: string;
+  internalName: string;
+  thumb: string;
+}
+
+export async function getGameSuggestions(title: string): Promise<GameSuggestion[]> {
+  if (!title || title.trim().length === 0) return [];
+  const response = await fetch(`${BASE_URL}/games?title=${encodeURIComponent(title)}&limit=5`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch game suggestions');
+  }
+  return response.json();
+}
