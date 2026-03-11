@@ -280,7 +280,7 @@ export default function App() {
   const offersDeals = useMemo(() => 
     deals.map(deal => {
       const storeObj = availableStores.find(s => s.id === deal.storeID);
-      const optimizedThumb = deal.thumb?.replace(/capsule_sm_120/g, 'capsule_231x87') || '';
+      const optimizedThumb = deal.thumb.replace(/capsule_sm_120/g, 'capsule_231x87');
       
       return {
         id: deal.dealID,
