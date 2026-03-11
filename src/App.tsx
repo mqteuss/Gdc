@@ -44,9 +44,31 @@ export default function App() {
   useEffect(() => {
     const loadMonitoredGames = async () => {
       try {
-        const storedGames = await get<GameDeal[]>('monitored-games');
+        const storedGames = await get<any[]>('monitored-games');
         if (storedGames) {
-          setMonitoredGames(storedGames);
+          // Migração de dados antigos para o novo formato GameDeal, caso existam no IndexedDB
+          const migratedGames = storedGames.map(g => {
+            // Se for um objeto com a estrutura antiga da API CheapShark
+            if (g.originalPrice === undefined && g.normalPrice !== undefined) {
+              return {
+                ...g,
+                id: g.dealID || g.id || Math.random().toString(),
+                gameID: g.gameID,
+                title: g.title,
+                imageUrl: (g.thumb || g.imageUrl || '').replace(/capsule_sm_120/g, 'capsule_231x87'),
+                originalPrice: parseFloat(g.normalPrice || '0') * 5.0, // fallback de conversão
+                discountedPrice: parseFloat(g.salePrice || '0') * 5.0,
+                discountPercentage: Math.round(parseFloat(g.savings || '0')),
+                store: g.storeID || 'Desconhecida',
+                storeIcon: '',
+                platform: 'PC',
+                url: `https://www.cheapshark.com/redirect?dealID=${g.dealID}`
+              };
+            }
+            return g;
+          });
+          
+          setMonitoredGames(migratedGames);
         }
       } catch (err) {
         console.error('Failed to load monitored games:', err);
