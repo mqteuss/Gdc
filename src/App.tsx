@@ -231,17 +231,16 @@ export default function App() {
       const deltaX = touch.clientX - touchStartRef.current.x;
       const deltaY = touch.clientY - touchStartRef.current.y;
 
-      // Ignora se o movimento vertical é maior que o horizontal (scroll)
-      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      // Ignora se não for um swipe horizontal bem definido (2x mais horizontal que vertical)
+      if (Math.abs(deltaX) < Math.abs(deltaY) * 2) {
         touchStartRef.current = null;
         return;
       }
 
-      const SWIPE_THRESHOLD = 50;
-      const EDGE_ZONE = 30; // px da borda esquerda da tela
+      const SWIPE_THRESHOLD = 80;
 
-      // Swipe para a direita a partir da borda esquerda → abrir
-      if (!isSidebarOpen && touchStartRef.current.x < EDGE_ZONE && deltaX > SWIPE_THRESHOLD) {
+      // Swipe para a direita de qualquer lugar → abrir
+      if (!isSidebarOpen && deltaX > SWIPE_THRESHOLD) {
         setIsSidebarOpen(true);
       }
 
@@ -304,12 +303,6 @@ export default function App() {
       />
       
       <div className="flex pt-16 min-h-screen">
-        {/* Borda de toque para abrir sidebar no mobile */}
-        {!isSidebarOpen && (
-          <div className="fixed inset-y-0 left-0 w-3 z-30 md:hidden flex items-center justify-center">
-            <div className="w-1 h-8 bg-white/15 rounded-full" />
-          </div>
-        )}
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
           {isSidebarOpen && (
