@@ -32,7 +32,8 @@ export default function App() {
   
   const [pageNumber, setPageNumber] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const observerTarget = useRef<HTMLDivElement>(null);
+  const offersObserverRef = useRef<HTMLDivElement>(null);
+  const monitoredObserverRef = useRef<HTMLDivElement>(null);
 
   const [monitoredGames, setMonitoredGames] = useState<GameDeal[]>([]);
   const [showMonitoredOnly, setShowMonitoredOnly] = useState(false);
@@ -130,11 +131,9 @@ export default function App() {
     }
   }, [showMonitoredOnly]);
 
-  // Fetch deals
+  // Fetch deals — NÃO depende de showMonitoredOnly para não re-triggerar ao trocar aba
   useEffect(() => {
-    if (exchangeRate === 0 || showMonitoredOnly) {
-      return;
-    }
+    if (exchangeRate === 0) return;
 
     const fetchDeals = async () => {
       try {
@@ -178,29 +177,41 @@ export default function App() {
     };
 
     fetchDeals();
-  }, [pageNumber, debouncedSearch, selectedStores, debouncedMinPrice, debouncedMaxPrice, sortBy, exchangeRate, showMonitoredOnly]);
+  }, [pageNumber, debouncedSearch, selectedStores, debouncedMinPrice, debouncedMaxPrice, sortBy, exchangeRate]);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer para Ofertas (infinite scroll)
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting) {
-          if (showMonitoredOnly) {
-            setMonitoredVisibleCount(prev => prev + 20);
-          } else if (hasMore && !isLoading && !isLoadingMore) {
-            setPageNumber(prev => prev + 1);
-          }
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          setPageNumber(prev => prev + 1);
         }
       },
       { threshold: 0.1 }
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    if (offersObserverRef.current) {
+      observer.observe(offersObserverRef.current);
     }
-
     return () => observer.disconnect();
-  }, [hasMore, isLoading, isLoadingMore, showMonitoredOnly]);
+  }, [hasMore, isLoading, isLoadingMore]);
+
+  // Intersection Observer para Monitorados (infinite scroll)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          setMonitoredVisibleCount(prev => prev + 20);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (monitoredObserverRef.current) {
+      observer.observe(monitoredObserverRef.current);
+    }
+    return () => observer.disconnect();
+  }, [monitoredVisibleCount, monitoredGames.length]);
 
   const availableStores = useMemo(() => {
     return apiStores
@@ -264,34 +275,34 @@ export default function App() {
     };
   }, [isSidebarOpen]);
 
-  const displayedDeals = showMonitoredOnly 
-    ? monitoredGames.slice(0, monitoredVisibleCount) 
-    : deals.map(deal => {
-        const storeObj = availableStores.find(s => s.id === deal.storeID);
-        
-        // Otimização: Troca a miniatura de baixa resolução (120x45) por uma de melhor qualidade (231x87)
-        const optimizedThumb = deal.thumb.replace(/capsule_sm_120/g, 'capsule_231x87');
-        
-        return {
-          id: deal.dealID,
-          gameID: deal.gameID,
-          title: deal.title,
-          imageUrl: optimizedThumb,
-          originalPrice: parseFloat(deal.normalPrice) * exchangeRate,
-          discountedPrice: parseFloat(deal.salePrice) * exchangeRate,
-          discountPercentage: Math.round(parseFloat(deal.savings)),
-          store: storeObj ? storeObj.name : 'Desconhecida',
-          storeIcon: storeObj ? storeObj.icon : '',
-          platform: 'PC',
-          url: `https://www.cheapshark.com/redirect?dealID=${deal.dealID}`,
-          metacriticScore: deal.metacriticScore,
-          steamRatingPercent: deal.steamRatingPercent,
-          steamRatingText: deal.steamRatingText,
-          steamRatingCount: deal.steamRatingCount,
-          releaseDate: deal.releaseDate,
-          dealRating: deal.dealRating
-        };
-      });
+  // Memoiza a conversão dos deals para GameDeal — só recalcula quando deals/stores/rate mudam
+  // NUNCA depende de showMonitoredOnly, para não re-renderizar ao trocar de aba
+  const offersDeals = useMemo(() => 
+    deals.map(deal => {
+      const storeObj = availableStores.find(s => s.id === deal.storeID);
+      const optimizedThumb = deal.thumb?.replace(/capsule_sm_120/g, 'capsule_231x87') || '';
+      
+      return {
+        id: deal.dealID,
+        gameID: deal.gameID,
+        title: deal.title,
+        imageUrl: optimizedThumb,
+        originalPrice: parseFloat(deal.normalPrice) * exchangeRate,
+        discountedPrice: parseFloat(deal.salePrice) * exchangeRate,
+        discountPercentage: Math.round(parseFloat(deal.savings)),
+        store: storeObj ? storeObj.name : 'Desconhecida',
+        storeIcon: storeObj ? storeObj.icon : '',
+        platform: 'PC',
+        url: `https://www.cheapshark.com/redirect?dealID=${deal.dealID}`,
+        metacriticScore: deal.metacriticScore,
+        steamRatingPercent: deal.steamRatingPercent,
+        steamRatingText: deal.steamRatingText,
+        steamRatingCount: deal.steamRatingCount,
+        releaseDate: deal.releaseDate,
+        dealRating: deal.dealRating
+      };
+    })
+  , [deals, availableStores, exchangeRate]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden">
@@ -391,9 +402,9 @@ export default function App() {
                 </div>
               ) : (
                 <>
-                  {displayedDeals.length > 0 ? (
+                  {offersDeals.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {displayedDeals.map(deal => (
+                      {offersDeals.map(deal => (
                         <div key={deal.id} className="hidden sm:block">
                           <GameCard 
                             deal={deal}
@@ -404,7 +415,7 @@ export default function App() {
                           />
                         </div>
                       ))}
-                      {displayedDeals.map(deal => (
+                      {offersDeals.map(deal => (
                         <div key={`mobile-${deal.id}`} className="block sm:hidden">
                           <GameCard 
                             deal={deal}
@@ -440,8 +451,8 @@ export default function App() {
                   )}
 
                   {/* Infinite Scroll - Ofertas */}
-                  {hasMore && displayedDeals.length > 0 && (
-                    <div ref={!showMonitoredOnly ? observerTarget : undefined} className="w-full py-12 flex justify-center items-center">
+                  {hasMore && offersDeals.length > 0 && (
+                    <div ref={offersObserverRef} className="w-full py-12 flex justify-center items-center">
                       {isLoadingMore ? (
                         <div className="flex flex-col items-center gap-2">
                           <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
@@ -453,7 +464,7 @@ export default function App() {
                     </div>
                   )}
                   
-                  {!hasMore && displayedDeals.length > 0 && (
+                  {!hasMore && offersDeals.length > 0 && (
                     <div className="w-full py-12 flex justify-center">
                       <p className="text-zinc-500 font-medium">Você chegou ao fim das ofertas.</p>
                     </div>
@@ -493,7 +504,7 @@ export default function App() {
 
                   {/* Infinite Scroll - Monitorados */}
                   {monitoredVisibleCount < monitoredGames.length && (
-                    <div ref={showMonitoredOnly ? observerTarget : undefined} className="w-full py-12 flex justify-center items-center">
+                    <div ref={monitoredObserverRef} className="w-full py-12 flex justify-center items-center">
                       <div className="h-8 w-full" />
                     </div>
                   )}
