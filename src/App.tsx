@@ -305,8 +305,8 @@ export default function App() {
                 <h2 className="text-xl sm:text-2xl font-bold text-white">
                   {showMonitoredOnly 
                     ? 'Monitorados' 
-                    : searchQuery 
-                      ? `Resultados para "${searchQuery}"` 
+                    : debouncedSearch 
+                      ? `Resultados para "${debouncedSearch}"` 
                       : 'Destaques'}
                 </h2>
                 <button
