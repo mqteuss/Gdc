@@ -392,15 +392,28 @@ export default function App() {
             ) : (
               <>
                 {displayedDeals.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {displayedDeals.map(deal => (
-                      <GameCard 
-                        key={deal.id} 
-                        deal={deal}
-                        isMonitored={monitoredGames.some(g => g.id === deal.id)}
-                        onToggleMonitor={toggleMonitor}
-                        onClick={() => setSelectedGame(deal)}
-                      />
+                      <div key={deal.id} className="hidden sm:block">
+                        <GameCard 
+                          deal={deal}
+                          isMonitored={monitoredGames.some(g => g.id === deal.id)}
+                          onToggleMonitor={toggleMonitor}
+                          onClick={() => setSelectedGame(deal)}
+                          layout="vertical"
+                        />
+                      </div>
+                    ))}
+                    {displayedDeals.map(deal => (
+                      <div key={`mobile-${deal.id}`} className="block sm:hidden">
+                        <GameCard 
+                          deal={deal}
+                          isMonitored={monitoredGames.some(g => g.id === deal.id)}
+                          onToggleMonitor={toggleMonitor}
+                          onClick={() => setSelectedGame(deal)}
+                          layout="horizontal"
+                        />
+                      </div>
                     ))}
                   </div>
                 ) : (
