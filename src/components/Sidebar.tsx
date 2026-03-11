@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-full md:w-64 bg-transparent p-6 flex flex-col gap-8 h-full overflow-y-auto">
       <div>
         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-4">Preço (R$)</h3>
-        <div className="flex items-center gap-3 bg-zinc-800/80 p-1.5 rounded-xl shadow-inner shadow-black/40">
+        <div className="flex items-center gap-3 bg-zinc-800/80 p-1.5 rounded-xl">
           <input
             type="number"
             placeholder="Mín"
