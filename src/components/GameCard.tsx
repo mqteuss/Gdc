@@ -83,10 +83,10 @@ export const GameCard: React.FC<GameCardProps> = ({ deal, isMonitored = false, o
     return (
       <div 
         onClick={onClick}
-        className="bg-zinc-900/40 border border-white/5 rounded-md overflow-hidden flex flex-col cursor-pointer hover:bg-zinc-800/60 transition-colors group"
+        className="bg-zinc-900/40 border border-white/5 rounded-md flex flex-col cursor-pointer hover:bg-zinc-800/60 transition-colors group relative"
       >
         {/* Image */}
-        <div className="w-full aspect-[460/215] relative bg-black/20">
+        <div className="w-full aspect-[460/215] relative bg-black/20 rounded-t-md overflow-hidden">
           <img 
             src={deal.imageUrl.includes('store_item_assets') ? deal.imageUrl : deal.imageUrl.replace(/capsule_231x87/g, 'header')} 
             alt={deal.title} 
@@ -205,7 +205,7 @@ export const GameCard: React.FC<GameCardProps> = ({ deal, isMonitored = false, o
   return (
     <div 
       onClick={onClick}
-      className="group flex items-stretch bg-zinc-900/40 hover:bg-zinc-800/60 overflow-hidden border-b border-white/5 transition-colors relative min-h-[6rem] sm:min-h-[7rem] cursor-pointer"
+      className="group flex items-stretch bg-zinc-900/40 hover:bg-zinc-800/60 border-b border-white/5 transition-colors relative min-h-[6rem] sm:min-h-[7rem] cursor-pointer"
     >
       {/* Image Section */}
       <div className="w-32 sm:w-48 flex-shrink-0 relative bg-black/20">
