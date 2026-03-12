@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Gamepad2, Menu, Sun, Moon, LayoutGrid, List } from 'lucide-react';
+import { Search, Gamepad2, Menu, Sun, Moon, LayoutGrid, List, User, LogOut } from 'lucide-react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   searchQuery: string;
@@ -9,6 +10,7 @@ interface HeaderProps {
   showMonitoredOnly: boolean;
   setShowMonitoredOnly: (val: boolean) => void;
   monitoredCount: number;
+  openAuthModal: (mode: 'login' | 'register') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -17,11 +19,15 @@ export const Header: React.FC<HeaderProps> = ({
   toggleSidebar,
   showMonitoredOnly,
   setShowMonitoredOnly,
-  monitoredCount
+  monitoredCount,
+  openAuthModal
 }) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
   const { theme, toggleTheme, viewMode, toggleViewMode } = useAppSettings();
+  const { user, signOut } = useAuth();
 
   // Refs para medir posição real dos botões de tab
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -31,6 +37,17 @@ export const Header: React.FC<HeaderProps> = ({
 
   // Salvar scroll position por aba
   const scrollPositions = useRef({ ofertas: 0, monitorados: 0 });
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const updateIndicator = useCallback(() => {
     const container = tabsContainerRef.current;
@@ -142,13 +159,56 @@ export const Header: React.FC<HeaderProps> = ({
                 {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
 
-              <div className="hidden md:flex items-center gap-2 ml-2">
-                <button className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
-                  Login
-                </button>
-                <button className="bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold py-2 px-4 rounded-lg transition-colors">
-                  Criar Conta
-                </button>
+              {/* Auth Section */}
+              <div className="flex items-center gap-2 ml-2">
+                {user ? (
+                   <div className="relative" ref={profileMenuRef}>
+                     <button
+                       onClick={() => setShowProfileMenu(!showProfileMenu)}
+                       className="flex items-center justify-center h-10 w-10 md:h-9 md:w-auto md:px-3 rounded-full md:rounded-lg bg-zinc-800 hover:bg-zinc-700 text-emerald-400 transition-colors border border-emerald-500/20"
+                     >
+                       <User size={18} className="md:mr-2" />
+                       <span className="hidden md:block text-sm font-medium text-white max-w-[100px] truncate">
+                         {user.email?.split('@')[0]}
+                       </span>
+                     </button>
+
+                     {/* Dropdown Menu */}
+                     {showProfileMenu && (
+                       <div className="absolute right-0 mt-2 w-48 rounded-xl bg-zinc-900 border border-white/10 shadow-xl overflow-hidden z-50">
+                         <div className="px-4 py-3 border-b border-white/5">
+                           <p className="text-sm font-medium text-white truncate">{user.email}</p>
+                         </div>
+                         <button
+                           onClick={() => {
+                             signOut();
+                             setShowProfileMenu(false);
+                           }}
+                           className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center gap-2"
+                         >
+                           <LogOut size={16} />
+                           Sair da conta
+                         </button>
+                       </div>
+                     )}
+                   </div>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => openAuthModal('login')}
+                      className="hidden md:block text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+                    >
+                      Login
+                    </button>
+                    <button 
+                      onClick={() => openAuthModal('register')}
+                      className="bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold py-2 px-4 rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      <span className="hidden md:inline">Criar Conta</span>
+                      <span className="md:hidden">Entrar</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

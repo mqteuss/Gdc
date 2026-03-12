@@ -10,11 +10,13 @@ import { GameDeal } from './types';
 import { get, set } from 'idb-keyval';
 import { motion, AnimatePresence } from 'motion/react';
 import { GameModal } from './components/GameModal';
-import { FeaturedCarousel } from './components/FeaturedCarousel';
+import { AuthModal } from './components/AuthModal';
 import { useAppSettings } from './contexts/AppSettingsContext';
 
 export default function App() {
   const { viewMode } = useAppSettings();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [minPrice, setMinPrice] = useState<string>('');
@@ -317,6 +319,10 @@ export default function App() {
         showMonitoredOnly={showMonitoredOnly}
         setShowMonitoredOnly={setShowMonitoredOnly}
         monitoredCount={monitoredGames.length}
+        openAuthModal={(mode) => {
+          setAuthModalMode(mode);
+          setIsAuthModalOpen(true);
+        }}
       />
       
       {/* O main content padding pt-32 para compensar o header maior */}
@@ -550,6 +556,12 @@ export default function App() {
           availableStores={availableStores}
         />
       )}
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        initialMode={authModalMode} 
+      />
     </div>
   );
 }
