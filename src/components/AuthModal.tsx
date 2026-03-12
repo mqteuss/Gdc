@@ -11,7 +11,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) => {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, user } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
 
   // Sincroniza o mode com o initialMode sempre que o modal abrir
@@ -20,6 +20,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
       setMode(initialMode);
     }
   }, [isOpen, initialMode]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -66,26 +67,42 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     }
   };
 
-  const uploadAvatar = async (userId: string): Promise<string | null> => {
-    if (!avatarFile) return null;
+  const uploadAvatarAndUpdateProfile = async (userId: string, displayName: string) => {
+    let avatarUrl: string | null = null;
 
-    const fileExt = avatarFile.name.split('.').pop();
-    const filePath = `${userId}/avatar.${fileExt}`;
+    // Upload do avatar se selecionado
+    if (avatarFile) {
+      const fileExt = avatarFile.name.split('.').pop();
+      const filePath = `${userId}/avatar.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, avatarFile, { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, avatarFile, { upsert: true });
 
-    if (uploadError) {
-      console.error('Avatar upload failed:', uploadError);
-      return null;
+      if (uploadError) {
+        console.error('Avatar upload failed:', uploadError);
+      } else {
+        const { data } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+        avatarUrl = data.publicUrl;
+      }
     }
 
-    const { data } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
+    // Atualizar perfil com username e avatar
+    const updateData: any = { username: displayName };
+    if (avatarUrl) {
+      updateData.avatar_url = avatarUrl;
+    }
 
-    return data.publicUrl;
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('Failed to update profile:', profileError);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,42 +134,49 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
         if (signUpError) throw signUpError;
 
-        // Se o registro foi bem-sucedido e temos um usuário, atualizar o perfil
-        if (signUpData.user) {
-          let avatarUrl: string | null = null;
-
-          // Upload do avatar se selecionado
+        // Se o registro criou uma sessão ativa (sem confirmação de email), 
+        // podemos atualizar o perfil agora
+        if (signUpData.session && signUpData.user) {
+          await uploadAvatarAndUpdateProfile(signUpData.user.id, username.trim());
+          await refreshProfile();
+          handleClose();
+        } else {
+          // Confirmação de email necessária — salvar username/avatar pra depois
+          // O perfil será atualizado na primeira vez que o usuário logar
+          setSuccessMsg('Cadastro realizado com sucesso! Por favor, verifique sua caixa de entrada para confirmar o email antes de entrar.');
+          
+          // Guardar username temporariamente no localStorage para aplicar no primeiro login
+          localStorage.setItem('pending_username', username.trim());
           if (avatarFile) {
-            avatarUrl = await uploadAvatar(signUpData.user.id);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              localStorage.setItem('pending_avatar', reader.result as string);
+            };
+            reader.readAsDataURL(avatarFile);
           }
 
-          // Atualizar perfil com username e avatar
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({
-              username: username.trim(),
-              avatar_url: avatarUrl,
-            })
-            .eq('id', signUpData.user.id);
-
-          if (profileError) {
-            console.error('Failed to update profile:', profileError);
-          }
+          setMode('login');
+          setPassword('');
+          setUsername('');
+          setAvatarFile(null);
+          setAvatarPreview(null);
         }
-
-        setSuccessMsg('Cadastro realizado com sucesso! Por favor, verifique sua caixa de entrada para confirmar o email antes de entrar.');
-        setMode('login');
-        setPassword('');
-        setUsername('');
-        setAvatarFile(null);
-        setAvatarPreview(null);
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (signInError) throw signInError;
+
+        // Verificar se há dados pendentes do cadastro para aplicar no perfil
+        const pendingUsername = localStorage.getItem('pending_username');
+        if (pendingUsername && signInData.user) {
+          await uploadAvatarAndUpdateProfile(signInData.user.id, pendingUsername);
+          localStorage.removeItem('pending_username');
+          localStorage.removeItem('pending_avatar');
+        }
+
         await refreshProfile();
         handleClose();
       }
@@ -164,6 +188,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         setError('Este email já está cadastrado.');
       } else if (err.message.includes('Password should be at least')) {
         setError('A senha deve ter pelo menos 6 caracteres.');
+      } else if (err.message.includes('Email not confirmed')) {
+        setError('Email não confirmado. Verifique sua caixa de entrada.');
       } else {
          setError(err.message || 'Ocorreu um erro durante a autenticação.');
       }
