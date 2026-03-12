@@ -38,16 +38,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (currentUser: User) => {
     try {
+      // Tenta buscar o perfil existente
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('id', currentUser.id)
+        .maybeSingle(); // Não dá erro se 0 rows
 
       if (error) throw error;
-      setProfile(data as Profile);
+
+      if (data) {
+        setProfile(data as Profile);
+      } else {
+        // Perfil não existe ainda (trigger pode ter falhado) — cria manualmente
+        console.log('Profile not found, creating one...');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: currentUser.id,
+            email: currentUser.email || '',
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Failed to create profile:', insertError);
+          // Se o insert falhou (talvez RLS block), setar um perfil local temporário
+          setProfile({
+            id: currentUser.id,
+            email: currentUser.email || '',
+            username: null,
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+          });
+        } else {
+          setProfile(newProfile as Profile);
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
       setProfile(null);
@@ -56,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.id);
+      await fetchProfile(user);
     }
   };
 
@@ -66,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user);
       }
       setIsLoading(false);
     });
@@ -78,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user);
       } else {
         setProfile(null);
       }
