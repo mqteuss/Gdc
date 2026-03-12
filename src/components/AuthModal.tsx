@@ -67,32 +67,46 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     }
   };
 
-  const uploadAvatarAndUpdateProfile = async (userId: string, displayName: string) => {
-    let avatarUrl: string | null = null;
+  // Comprime a imagem para 128x128 JPEG base64 (leve o suficiente para o banco)
+  const compressAvatar = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        img.src = reader.result as string;
+      };
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 128;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d')!;
+        
+        // Crop centralizado (quadrado)
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+        
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
-    // Upload do avatar se selecionado
-    if (avatarFile) {
-      const fileExt = avatarFile.name.split('.').pop();
-      const filePath = `${userId}/avatar.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, avatarFile, { upsert: true });
-
-      if (uploadError) {
-        console.error('Avatar upload failed:', uploadError);
-      } else {
-        const { data } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-        avatarUrl = data.publicUrl;
-      }
-    }
-
-    // Atualizar perfil com username e avatar
+  const saveProfileData = async (userId: string, displayName: string) => {
     const updateData: any = { username: displayName };
-    if (avatarUrl) {
-      updateData.avatar_url = avatarUrl;
+
+    // Comprimir e salvar avatar diretamente como base64
+    if (avatarFile) {
+      try {
+        const base64Avatar = await compressAvatar(avatarFile);
+        updateData.avatar_url = base64Avatar;
+      } catch (err) {
+        console.error('Failed to compress avatar:', err);
+      }
     }
 
     const { error: profileError } = await supabase
@@ -137,7 +151,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         // Se o registro criou uma sessão ativa (sem confirmação de email), 
         // podemos atualizar o perfil agora
         if (signUpData.session && signUpData.user) {
-          await uploadAvatarAndUpdateProfile(signUpData.user.id, username.trim());
+          await saveProfileData(signUpData.user.id, username.trim());
           await refreshProfile();
           handleClose();
         } else {
@@ -172,7 +186,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         // Verificar se há dados pendentes do cadastro para aplicar no perfil
         const pendingUsername = localStorage.getItem('pending_username');
         if (pendingUsername && signInData.user) {
-          await uploadAvatarAndUpdateProfile(signInData.user.id, pendingUsername);
+          await saveProfileData(signInData.user.id, pendingUsername);
           localStorage.removeItem('pending_username');
           localStorage.removeItem('pending_avatar');
         }
