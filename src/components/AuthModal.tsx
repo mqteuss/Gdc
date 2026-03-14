@@ -137,6 +137,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     setSuccessMsg(null);
 
     try {
+      const safeEmail = email.trim();
+
       if (mode === 'register') {
         // Validação customizada de senha
         const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{6,}$/;
@@ -164,7 +166,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         }
 
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
+          email: safeEmail,
           password,
         });
 
@@ -173,7 +175,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         // Se o registro criou uma sessão ativa (sem confirmação de email), 
         // podemos atualizar o perfil agora
         if (signUpData.session && signUpData.user) {
-          await saveProfileData(signUpData.user.id, username.trim(), email, avatarPreview);
+          await saveProfileData(signUpData.user.id, username.trim(), safeEmail, avatarPreview);
           await refreshProfile();
           handleClose();
         } else {
@@ -199,7 +201,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         }
       } else {
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
+          email: safeEmail,
           password,
         });
 
@@ -209,7 +211,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         const pendingUsername = localStorage.getItem('pending_username');
         if (pendingUsername && signInData.user) {
           const pendingAvatar = localStorage.getItem('pending_avatar');
-          await saveProfileData(signInData.user.id, pendingUsername, email, pendingAvatar);
+          await saveProfileData(signInData.user.id, pendingUsername, safeEmail, pendingAvatar);
           localStorage.removeItem('pending_username');
           localStorage.removeItem('pending_avatar');
         }
